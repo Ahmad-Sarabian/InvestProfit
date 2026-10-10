@@ -8,11 +8,20 @@ interface InputGroupProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   unit: string;
   placeholder?: string;
+  tooltipText: string;
 }
 
-const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, unit, placeholder }) => (
+const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, unit, placeholder, tooltipText }) => (
   <div>
-    <label htmlFor={name as string} className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+    <div className="flex items-center gap-2 mb-2">
+      <label htmlFor={name as string} className="block text-sm font-medium text-gray-300">{label}</label>
+      <div className="tooltip">
+        <svg className="w-4 h-4 text-gray-500 cursor-pointer" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+        </svg>
+        <span className="tooltiptext">{tooltipText}</span>
+      </div>
+    </div>
     <div className="relative">
       <input
         type="number"
@@ -21,7 +30,7 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, u
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3 pr-20 text-lg"
+        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3 pr-20 text-lg transition duration-300 ease-in-out"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
         <span className="text-gray-400 sm:text-sm">{unit}</span>
@@ -33,12 +42,13 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, u
 
 interface CalculatorFormProps {
   inputs: CalculationInput;
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onTransactionTypeChange: (type: 'withdrawal' | 'deposit') => void;
   onCalculate: () => void;
 }
 
 const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, onTransactionTypeChange, onCalculate }) => {
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onCalculate();
@@ -56,13 +66,15 @@ const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, 
         value={inputs.initialInvestment}
         onChange={onInputChange}
         unit="تومان"
+        tooltipText="مبلغی که در ابتدا برای سرمایه‌گذاری وارد می‌کنید."
       />
       <InputGroup 
         label="درصد سود ماهانه"
-        name="monthlyProfitRate"
-        value={inputs.monthlyProfitRate}
+        name="profitRate"
+        value={inputs.profitRate}
         onChange={onInputChange}
         unit="%"
+        tooltipText="درصد سودی که به صورت ماهانه به سرمایه شما اضافه می‌شود."
       />
       <InputGroup 
         label="مدت سرمایه‌گذاری"
@@ -70,9 +82,10 @@ const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, 
         value={inputs.durationInMonths}
         onChange={onInputChange}
         unit="ماه"
+        tooltipText="تعداد کل ماه‌هایی که قصد دارید سرمایه‌گذاری خود را ادامه دهید."
       />
       
-      <div>
+      <div className="border-t border-gray-700 pt-6">
         <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-700 p-1 mb-3">
             <button type="button" onClick={() => onTransactionTypeChange('deposit')} className={`w-full font-bold py-2 px-4 rounded-md text-sm transition-colors duration-300 ${inputs.transactionType === 'deposit' ? activeClass : inactiveClass}`}>
               واریز ماهانه
@@ -88,6 +101,7 @@ const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, 
             value={inputs.monthlyTransactionAmount}
             onChange={onInputChange}
             unit="تومان"
+            tooltipText="مبلغ ثابتی که در ابتدای هر ماه قصد واریز یا برداشت آن را دارید."
           />
           <InputGroup 
             label="میزان تغییرات ماهانه (اختیاری)"
@@ -96,6 +110,7 @@ const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, 
             onChange={onInputChange}
             unit="تومان"
             placeholder="مثال: 100000- برای کاهش"
+            tooltipText="مبلغی که به صورت ماهانه به مبلغ واریز/برداشت شما اضافه یا از آن کم می‌شود. برای کاهش، از عدد منفی استفاده کنید (مثال: 100000-)."
           />
         </div>
       </div>

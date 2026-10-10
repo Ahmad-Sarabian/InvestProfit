@@ -1,27 +1,170 @@
-
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ماشین حساب سود سرمایه گذاری</title>
+    <meta name="description" content="یک اپلیکیشن پیشرو (PWA) برای محاسبه سود مرکب سرمایه گذاری با در نظر گرفتن سرمایه اولیه، درصد سود ماهانه، مدت زمان، واریز یا برداشت ماهانه و امکان نصب و کارکرد آفلاین." />
+    <meta property="og:title" content="ماشین حساب سود سرمایه گذاری" />
+    <meta property="og:description" content="یک اپلیکیشن پیشرو (PWA) برای محاسبه سود مرکب سرمایه گذاری با امکان کارکرد آفلاین و نصب به عنوان برنامه." />
+    <meta name="theme-color" content="#111827" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="سود سرمایه" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+        transition: background-color 0.3s, color 0.3s;
       }
+
+      /* Tooltip styles */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 250px;
+        background-color: #1f2937; /* Default: bg-gray-800 */
+        color: #fff;
+        text-align: right;
+        border-radius: 6px;
+        padding: 8px 12px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -125px; /* Half of width */
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border: 1px solid #4b5563; /* Default: border-gray-600 */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      
+      .tooltip .tooltiptext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #4b5563 transparent transparent transparent; /* Default: border-gray-600 */
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* --- Font Size --- */
+      .font-size-sm { font-size: 14px; }
+      .font-size-md { font-size: 16px; }
+      .font-size-lg { font-size: 18px; }
+
+      /* --- Theme Definitions --- */
+      
+      /* === Dark Blue (Default) Theme === */
+      body.theme-dark-blue {
+          background-color: #111827; /* bg-gray-900 */
+          color: #f3f4f6; /* text-gray-100 */
+      }
+      /* Other styles are default from Tailwind */
+
+      /* === Light Theme === */
+      body.theme-light {
+          background-color: #f9fafb; /* bg-gray-50 */
+          color: #111827; /* text-gray-900 */
+      }
+      .theme-light .bg-gray-900 { background-color: #f9fafb; }
+      .theme-light .text-gray-100 { color: #111827; }
+      .theme-light .text-white { color: #1f2937; }
+      .theme-light .bg-gray-800, .theme-light .bg-gray-800\/50 { background-color: #ffffff; }
+      .theme-light .bg-gray-700, .theme-light .bg-gray-700\/50 { background-color: #f3f4f6; }
+      .theme-light .text-gray-300, .theme-light .text-gray-200 { color: #374151; }
+      .theme-light .text-gray-400 { color: #6b7280; }
+      .theme-light .text-gray-500 { color: #9ca3af; }
+      .theme-light .text-gray-600 { color: #4b5563; }
+      .theme-light .border-gray-700 { border-color: #e5e7eb; }
+      .theme-light .border-gray-600 { border-color: #d1d5db; }
+      .theme-light .hover\:bg-gray-600:hover { background-color: #f3f4f6; }
+      .theme-light .focus\:ring-offset-gray-900:focus { --tw-ring-offset-color: #f9fafb; }
+      .theme-light .bg-blue-600 { background-color: #3b82f6; }
+      .theme-light .hover\:bg-blue-700:hover { background-color: #2563eb; }
+      .theme-light .focus\:ring-blue-800:focus { --tw-ring-color: #bfdbfe; }
+      .theme-light .bg-indigo-600 { background-color: #4f46e5; }
+      .theme-light .hover\:bg-indigo-700:hover { background-color: #4338ca; }
+      .theme-light .focus\:ring-indigo-800:focus { --tw-ring-color: #c7d2fe; }
+      .theme-light .disabled\:bg-gray-600:disabled { background-color: #d1d5db; }
+      .theme-light .text-red-400 { color: #ef4444; }
+      .theme-light .hover\:text-red-300:hover { color: #dc2626; }
+      .theme-light .bg-red-600 { background-color: #ef4444; }
+      .theme-light .hover\:bg-red-700:hover { background-color: #dc2626; }
+      .theme-light .text-green-400 { color: #22c55e; }
+      .theme-light .text-yellow-400 { color: #f59e0b; }
+      .theme-light .text-cyan-400 { color: #22d3ee; }
+      .theme-light .bg-blue-900\/30 { background-color: rgba(59, 130, 246, 0.1); }
+      .theme-light .tooltip .tooltiptext { background-color: #fff; color: #1f2937; border-color: #d1d5db; }
+      .theme-light .tooltip .tooltiptext::after { border-top-color: #d1d5db; }
+      .theme-light button.bg-transparent { background-color: transparent; }
+      
+      /* === Forest Theme === */
+      body.theme-forest {
+          background-color: #1a2e29;
+          color: #e6f1ee;
+      }
+      .theme-forest .bg-gray-900 { background-color: #1a2e29; }
+      .theme-forest .text-gray-100, .theme-forest .text-white { color: #e6f1ee; }
+      .theme-forest .bg-gray-800, .theme-forest .bg-gray-800\/50 { background-color: #2d4a43; }
+      .theme-forest .bg-gray-700, .theme-forest .bg-gray-700\/50 { background-color: #3e645a; }
+      .theme-forest .text-gray-300, .theme-forest .text-gray-200 { color: #b8d3cb; }
+      .theme-forest .text-gray-400 { color: #8ab4a8; }
+      .theme-forest .text-gray-500 { color: #6c988b; }
+      .theme-forest .text-gray-600 { color: #507e71; }
+      .theme-forest .border-gray-700 { border-color: #3e645a; }
+      .theme-forest .border-gray-600 { border-color: #507e71; }
+      .theme-forest .hover\:bg-gray-600:hover { background-color: #507e71; }
+      .theme-forest .focus\:ring-offset-gray-900:focus { --tw-ring-offset-color: #1a2e29; }
+      .theme-forest .bg-blue-600 { background-color: #58b09c; }
+      .theme-forest .hover\:bg-blue-700:hover { background-color: #4a9d8a; }
+      .theme-forest .focus\:ring-blue-800:focus { --tw-ring-color: #2d4a43; }
+      .theme-forest .bg-indigo-600 { background-color: #85c7b5; }
+      .theme-forest .hover\:bg-indigo-700:hover { background-color: #6fae9d; }
+      .theme-forest .focus\:ring-indigo-800:focus { --tw-ring-color: #2d4a43; }
+      .theme-forest .disabled\:bg-gray-600:disabled { background-color: #507e71; }
+      .theme-forest .text-red-400 { color: #e78181; }
+      .theme-forest .hover\:text-red-300:hover { color: #f79797; }
+      .theme-forest .bg-red-600 { background-color: #e46666; }
+      .theme-forest .hover\:bg-red-700:hover { background-color: #d45555; }
+      .theme-forest .text-green-400 { color: #a1e17e; }
+      .theme-forest .text-yellow-400 { color: #efd797; }
+      .theme-forest .text-cyan-400 { color: #99e9d1; }
+      .theme-forest .bg-blue-900\/30 { background-color: rgba(133, 199, 181, 0.2); }
+      .theme-forest .tooltip .tooltiptext { background-color: #2d4a43; color: #e6f1ee; border-color: #507e71; }
+      .theme-forest .tooltip .tooltiptext::after { border-top-color: #507e71; }
+      .theme-forest button.bg-transparent { background-color: transparent; }
     </style>
   <script type="importmap">
 {
   "imports": {
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "recharts": "https://aistudiocdn.com/recharts@^2.12.7"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-900 text-gray-100">
+  <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -1,10 +1,11 @@
 export interface CalculationInput {
   initialInvestment: string;
-  monthlyProfitRate: string;
+  profitRate: string;
   durationInMonths: string;
   monthlyTransactionAmount: string;
   monthlyTransactionChange: string;
   transactionType: 'withdrawal' | 'deposit';
+  compoundingFrequency: 'daily' | 'monthly' | 'quarterly' | 'annually';
 }
 
 export interface MonthlyData {
@@ -23,3 +24,13 @@ export interface CalculationResult {
   totalDeposit: number;
   monthlyBreakdown: MonthlyData[];
 }
+
+export interface SavedCalculation {
+  id: string;
+  timestamp: number;
+  inputs: CalculationInput;
+  result: CalculationResult;
+}
+
+export type Theme = 'dark-blue' | 'light' | 'forest';
+export type FontSize = 'sm' | 'md' | 'lg';
