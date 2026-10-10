@@ -69,7 +69,10 @@ const DataChart: React.FC<DataChartProps> = ({ data }) => {
             <Bar dataKey="profit" name="سود" fill="#48BB78" />
             <Bar dataKey="withdrawal" name="برداشت" fill="#F6E05E" />
             <Bar dataKey="deposit" name="واریز" fill="#4FD1C5" />
-            <Line type="monotone" dataKey="endCapital" name="سرمایه پایانی" stroke="#4299E1" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="endCapital" name="سرمایه پایانی (اسمی)" stroke="#4299E1" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            {data.some(d => d.realEndCapital !== undefined && d.deflator !== undefined && d.deflator > 1) && (
+              <Line type="monotone" dataKey="realEndCapital" name="قدرت خرید (ارزش امروز)" stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

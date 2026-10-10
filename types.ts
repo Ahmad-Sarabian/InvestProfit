@@ -6,6 +6,7 @@ export interface CalculationInput {
   monthlyTransactionChange: string;
   transactionType: 'withdrawal' | 'deposit';
   compoundingFrequency: 'daily' | 'monthly' | 'quarterly' | 'annually';
+  inflationRate?: string;
 }
 
 export interface MonthlyData {
@@ -15,6 +16,12 @@ export interface MonthlyData {
   withdrawal: number;
   deposit: number;
   endCapital: number;
+  realEndCapital?: number;
+  realProfit?: number;
+  realWithdrawal?: number;
+  realDeposit?: number;
+  realStartCapital?: number;
+  deflator?: number;
 }
 
 export interface CalculationResult {
@@ -23,6 +30,13 @@ export interface CalculationResult {
   totalWithdrawal: number;
   totalDeposit: number;
   monthlyBreakdown: MonthlyData[];
+  inflationRate?: number;
+  hasInflation?: boolean;
+  realFinalCapital?: number;
+  realTotalProfit?: number;
+  realTotalWithdrawal?: number;
+  realTotalDeposit?: number;
+  realNetGain?: number;
 }
 
 export interface SavedCalculation {

@@ -10,20 +10,55 @@ import ThemeCustomizer from './components/ThemeCustomizer';
 import PWAInstallButton from './components/PWAInstallButton';
 import OfflineIndicator from './components/OfflineIndicator';
 
+const defaultInputs: CalculationInput = {
+  initialInvestment: '10000000',
+  profitRate: '5',
+  durationInMonths: '12',
+  monthlyTransactionAmount: '0',
+  monthlyTransactionChange: '0',
+  transactionType: 'withdrawal',
+  compoundingFrequency: 'monthly',
+  inflationRate: '',
+};
+
 const App: React.FC = () => {
-  const [inputs, setInputs] = useState<CalculationInput>({
-    initialInvestment: '10000000',
-    profitRate: '5',
-    durationInMonths: '12',
-    monthlyTransactionAmount: '0',
-    monthlyTransactionChange: '0',
-    transactionType: 'withdrawal',
-    compoundingFrequency: 'monthly',
+  const [inputs, setInputs] = useState<CalculationInput>(() => {
+    try {
+      const saved = localStorage.getItem('investmentCalculatorInputs');
+      if (saved) {
+        return { ...defaultInputs, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.error("Failed to load inputs from localStorage", e);
+    }
+    return defaultInputs;
   });
-  const [result, setResult] = useState<CalculationResult | null>(null);
+
+  const [result, setResult] = useState<CalculationResult | null>(() => {
+    try {
+      const saved = localStorage.getItem('investmentCalculatorResult');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load result from localStorage", e);
+    }
+    return null;
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedCalculation[]>([]);
-  const [comparisonScenarios, setComparisonScenarios] = useState<SavedCalculation[]>([]);
+  const [comparisonScenarios, setComparisonScenarios] = useState<SavedCalculation[]>(() => {
+    try {
+      const saved = localStorage.getItem('investmentCalculatorComparison');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load comparison scenarios from localStorage", e);
+    }
+    return [];
+  });
   const [theme, setTheme] = useState<Theme>('dark-blue');
   const [fontSize, setFontSize] = useState<FontSize>('md');
 
@@ -60,6 +95,36 @@ const App: React.FC = () => {
     }
   }, [theme, fontSize]);
 
+  // Persist inputs to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('investmentCalculatorInputs', JSON.stringify(inputs));
+    } catch (e) {
+      console.error("Failed to save inputs to localStorage", e);
+    }
+  }, [inputs]);
+
+  // Persist current active result to localStorage
+  useEffect(() => {
+    try {
+      if (result) {
+        localStorage.setItem('investmentCalculatorResult', JSON.stringify(result));
+      } else {
+        localStorage.removeItem('investmentCalculatorResult');
+      }
+    } catch (e) {
+      console.error("Failed to save result to localStorage", e);
+    }
+  }, [result]);
+
+  // Persist comparison scenarios to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('investmentCalculatorComparison', JSON.stringify(comparisonScenarios));
+    } catch (e) {
+      console.error("Failed to save comparison scenarios to localStorage", e);
+    }
+  }, [comparisonScenarios]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -70,35 +135,31 @@ const App: React.FC = () => {
     setInputs(prev => ({ ...prev, transactionType: type }));
   }, []);
 
-
-  useEffect(() => {
-    setResult(null);
-  }, [inputs]);
-  
   const handleCalculate = useCallback(() => {
     setError(null);
-    setResult(null);
 
     const initialInvestment = parseFloat(inputs.initialInvestment);
     const profitRate = parseFloat(inputs.profitRate);
     const durationInMonths = parseInt(inputs.durationInMonths, 10);
     const initialMonthlyTransactionAmount = parseFloat(inputs.monthlyTransactionAmount);
     const monthlyTransactionChange = parseFloat(inputs.monthlyTransactionChange);
+    const parsedInflation = inputs.inflationRate && inputs.inflationRate.trim() !== '' ? parseFloat(inputs.inflationRate) : 0;
 
     if (
       isNaN(initialInvestment) || initialInvestment < 0 ||
       isNaN(profitRate) || profitRate < 0 ||
       isNaN(durationInMonths) || durationInMonths <= 0 ||
       isNaN(initialMonthlyTransactionAmount) || initialMonthlyTransactionAmount < 0 ||
-      isNaN(monthlyTransactionChange)
+      isNaN(monthlyTransactionChange) ||
+      isNaN(parsedInflation) || parsedInflation < 0
     ) {
-      setError('لطفاً تمام مقادیر را به صورت اعداد معتبر وارد کنید (سرمایه اولیه، سود و مبلغ تراکنش باید مثبت باشند).');
+      setError('لطفاً تمام مقادیر را به صورت اعداد معتبر وارد کنید (سرمایه اولیه، سود، تورم و مبلغ تراکنش باید مثبت یا صفر باشند).');
       return;
     }
 
     const rate = profitRate / 100;
     const effectiveMonthlyRate = rate;
-
+    const hasInflation = parsedInflation > 0;
 
     let currentCapital = initialInvestment;
     const monthlyBreakdown: MonthlyData[] = [];
@@ -120,7 +181,21 @@ const App: React.FC = () => {
       }
 
       const endCapital = capitalAfterProfit - withdrawal + deposit;
+
+      // Cumulative inflation deflator at month i: (1 + annualInflation/100)^(i / 12)
+      const deflator = hasInflation ? Math.pow(1 + parsedInflation / 100, i / 12) : 1;
+      const prevDeflator = hasInflation ? (i === 1 ? 1 : Math.pow(1 + parsedInflation / 100, (i - 1) / 12)) : 1;
       
+      const realEndCapital = endCapital / deflator;
+      const realStartCapital = currentCapital / prevDeflator;
+      const realWithdrawal = withdrawal / deflator;
+      const realDeposit = deposit / deflator;
+
+      // Net real profit for this month (change in real purchasing power)
+      const realProfit = hasInflation 
+        ? (realEndCapital - realStartCapital + realWithdrawal - realDeposit)
+        : profit;
+
       monthlyBreakdown.push({
         month: i,
         startCapital: currentCapital,
@@ -128,6 +203,12 @@ const App: React.FC = () => {
         withdrawal: withdrawal,
         deposit: deposit,
         endCapital: endCapital,
+        realEndCapital,
+        realProfit,
+        realWithdrawal,
+        realDeposit,
+        realStartCapital,
+        deflator,
       });
 
       currentCapital = endCapital;
@@ -139,12 +220,26 @@ const App: React.FC = () => {
     const totalWithdrawal = monthlyBreakdown.reduce((acc, month) => acc + month.withdrawal, 0);
     const totalDeposit = monthlyBreakdown.reduce((acc, month) => acc + month.deposit, 0);
 
-    const resultData = {
+    const finalDeflator = hasInflation ? Math.pow(1 + parsedInflation / 100, durationInMonths / 12) : 1;
+    const realFinalCapital = currentCapital / finalDeflator;
+    const realTotalWithdrawal = monthlyBreakdown.reduce((acc, month) => acc + (month.realWithdrawal ?? month.withdrawal), 0);
+    const realTotalDeposit = monthlyBreakdown.reduce((acc, month) => acc + (month.realDeposit ?? month.deposit), 0);
+    const realNetGain = realFinalCapital - initialInvestment + realTotalWithdrawal - realTotalDeposit;
+    const realTotalProfit = hasInflation ? realNetGain : totalProfit;
+
+    const resultData: CalculationResult = {
       finalCapital: currentCapital,
       totalProfit,
       totalWithdrawal,
       totalDeposit,
       monthlyBreakdown,
+      inflationRate: parsedInflation,
+      hasInflation,
+      realFinalCapital,
+      realTotalProfit,
+      realTotalWithdrawal,
+      realTotalDeposit,
+      realNetGain,
     };
     setResult(resultData);
 
@@ -166,10 +261,20 @@ const App: React.FC = () => {
 
   }, [inputs]);
 
+  useEffect(() => {
+    if (!result) {
+      handleCalculate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLoadCalculation = useCallback((id: string) => {
     const calculationToLoad = history.find(item => item.id === id);
     if (calculationToLoad) {
-      setInputs(calculationToLoad.inputs);
+      setInputs({
+        ...calculationToLoad.inputs,
+        inflationRate: calculationToLoad.inputs.inflationRate ?? '',
+      });
       setResult(calculationToLoad.result);
       setError(null);
     }

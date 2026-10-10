@@ -84,6 +84,15 @@ const CalculatorForm: React.FC<CalculatorFormProps> = ({ inputs, onInputChange, 
         unit="ماه"
         tooltipText="تعداد کل ماه‌هایی که قصد دارید سرمایه‌گذاری خود را ادامه دهید."
       />
+      <InputGroup 
+        label="نرخ تورم سالانه (اختیاری)"
+        name="inflationRate"
+        value={inputs.inflationRate ?? ''}
+        onChange={onInputChange}
+        unit="%"
+        placeholder="مثال: 35"
+        tooltipText="نرخ تورم سالانه برای محاسبه ارزش واقعی سرمایه و قدرت خرید در پایان و طول دوره بر حسب ارزش روز."
+      />
       
       <div className="border-t border-gray-700 pt-6">
         <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-700 p-1 mb-3">
